@@ -273,7 +273,7 @@
             ExitButton.TabIndex = 5;
             ExitButton.Text = "&Exit";
             ExitButton.UseVisualStyleBackColor = true;
-            ExitButton.Click += quit;
+            ExitButton.Click += Quit;
             // 
             // LunchOrderForm
             // 
