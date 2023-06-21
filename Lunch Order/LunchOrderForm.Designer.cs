@@ -106,6 +106,7 @@
             SaladRadio.TabStop = true;
             SaladRadio.Text = "Salad";
             SaladRadio.UseVisualStyleBackColor = true;
+            SaladRadio.Click += ChangeMenu;
             // 
             // PizzaRadio
             // 
@@ -117,6 +118,7 @@
             PizzaRadio.TabStop = true;
             PizzaRadio.Text = "Pizza";
             PizzaRadio.UseVisualStyleBackColor = true;
+            PizzaRadio.Click += ChangeMenu;
             // 
             // HamburgerRadio
             // 
@@ -128,6 +130,7 @@
             HamburgerRadio.TabStop = true;
             HamburgerRadio.Text = "Hamburger";
             HamburgerRadio.UseVisualStyleBackColor = true;
+            HamburgerRadio.Click += ChangeMenu;
             // 
             // AddOnsGroup
             // 
@@ -250,7 +253,7 @@
             PlaceOrderButton.TabIndex = 3;
             PlaceOrderButton.Text = "Place &Order";
             PlaceOrderButton.UseVisualStyleBackColor = true;
-            PlaceOrderButton.Click += order;
+            PlaceOrderButton.Click += Order;
             // 
             // ResetButton
             // 
@@ -260,7 +263,7 @@
             ResetButton.TabIndex = 4;
             ResetButton.Text = "&Reset";
             ResetButton.UseVisualStyleBackColor = true;
-            ResetButton.Click += resetPrice;
+            ResetButton.Click += ResetMenu;
             // 
             // ExitButton
             // 

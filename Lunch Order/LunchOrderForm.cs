@@ -1,10 +1,13 @@
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Lunch_Order
 {
+    internal readonly record struct MenuItem(string Name, decimal Price, decimal AddonPrice, string[] Addons);
+
     /*
-     * This application calculates and displays the total price of a lunch order based
+     * This application calculates and displays the total price of a lunch Order based
      * on the menu item selected as well as addons, the subtotal, tax, and total are then
      * displayed to the user
      * 
@@ -14,95 +17,116 @@ namespace Lunch_Order
      */
     public partial class LunchOrderForm : Form
     {
+        private readonly Dictionary<Control, MenuItem> _menuItems;
+        private static readonly decimal TAX_RATE = 0.05m;
+
+        private MenuItem _selectedItem;
+
         public LunchOrderForm()
         {
             InitializeComponent();
+            _menuItems = new Dictionary<Control, MenuItem>
+            {
+                [HamburgerRadio] = new MenuItem(
+                    "Hamburger",
+                    6.95m,
+                    0.75m,
+                    new string[]
+                    {
+                        "Lettuce, Tomato, Onion",
+                        "Ketchup, Mustard, Mayo",
+                        "French Fries",
+                    }),
+                [PizzaRadio] = new MenuItem(
+                    "Pizza",
+                    5.95m,
+                    0.50m,
+                    new string[]
+                    {
+                        "Mushrooms",
+                        "Pepperoni",
+                        "Olives",
+                    }),
+                [SaladRadio] = new MenuItem(
+                    "Salad",
+                    4.95m,
+                    0.25m,
+                    new string[]
+                    {
+                        "Croutons",
+                        "Bacon Bits",
+                        "Bread Sticks",
+                    }),
+            };
+
+            _selectedItem = _menuItems[HamburgerRadio];
+        }
+
+        private void ChangeMenu(object sender, EventArgs e)
+        {
+            _selectedItem = _menuItems[(Control)sender];
+            UpdateAddons((Control)sender);
+            ResetPrices();
+        }
+
+        private void UpdateAddons(Control menuRadio)
+        {
+            MenuItem item = _menuItems[menuRadio];
+            CheckBox[] addonChecks = AddOnsGroup.Controls
+                                                .OfType<CheckBox>()
+                                                .ToArray();
+
+            AddOnsGroup.Text = $"{item.Name} Addons ({item.AddonPrice:C2} each)";
+            for (int i = 0; i < item.Addons.Length && i < addonChecks.Length; i++)
+            {
+                addonChecks[i].Checked = false;
+                addonChecks[i].Text = item.Addons[i];
+            }
         }
 
         // Calculates and displays the total price of the order
         // (menu + addons + tax)
-        // This is the Click handler for the order button
-        private void order(object sender, EventArgs e)
+        // This is the Click handler for the Order button
+        private void Order(object sender, EventArgs e)
         {
-            // Menu price constants
-            const double PRICE_HAMBURGER = 6.95;
-            const double PRICE_PIZZA = 5.95;
-            const double PRICE_SALAD = 4.95;
+            decimal subtotal = CalculateSubtotal(_selectedItem);
+            decimal tax = CalculateTax(subtotal);
+            decimal total = subtotal + tax;
 
-            double menuPrice;  // The price of the menu item
-            double subtotal;    // The subtotal (menu price + addons)
-            double tax;         // The tax
-            double total;       // The total (subtotal + tax)
-
-            /* 
-             * Get the menu price
-             * 
-             * Since the form is only updated when the "order" or "reset" buttons are
-             * pressed, I just check the state of the radio buttons here
-             */
-            if (HamburgerRadio.Checked)
-            {
-                menuPrice = PRICE_HAMBURGER;
-            }
-            else if (PizzaRadio.Checked)
-            {
-                menuPrice = PRICE_PIZZA;
-            }
-            else if (SaladRadio.Checked)
-            {
-                menuPrice = PRICE_SALAD;
-            }
-            else
-            {
-                menuPrice = 0;
-            }
-
-            // Perform the calculations
-            subtotal        = calculateSubtotal(menuPrice); // Calculate the subtotal
-            (tax, total)    = calculateTotal(subtotal);     // Calculate the total
-
-            // Display the calculated prices
-            SubtotalText.Text = String.Format("{0:C2}", subtotal);  // Format subtotal as price w/ 2 decimals
-            TaxText.Text = String.Format("{0:C2}", tax);            // Format tax as price w/ 2 decimals
-            OrderTotalText.Text = String.Format("{0:C2}", total);   // Format total as price w/ 2 decimals
+            SubtotalText.Text = $"{subtotal:C2}";
+            TaxText.Text = $"{tax:C2}";
+            OrderTotalText.Text = $"{total:C2}";
         }
 
-        // Calculates the order total and tax rate based on subtotal
-        private (double tax, double total) calculateTotal(double subtotal)
+        private decimal CalculateSubtotal(MenuItem Selection)
         {
-            double tax = calculateTax(subtotal);
-            return (tax, tax + subtotal);
-        }
+            decimal subtotal = Selection.Price;
 
-        // Calculates the sum price of all addons selected
-        private double calculateSubtotal(double menuPrice)
-        {
-            const double ADD_ON_PRICE = 0.75;   // All addons are $0.75
-            double addonTotal = 0;                   // Sum of all addon charges
-
-            // iterate through children of the addon group
-            for (int i = 0; i < AddOnsGroup.Controls.Count; i++)
+            foreach (CheckBox check in AddOnsGroup.Controls.OfType<CheckBox>())
             {
-                // if the child is checked, then add the addon price to the total
-                if (((CheckBox)AddOnsGroup.Controls[i]).Checked)
-                {
-                    addonTotal += ADD_ON_PRICE;
-                }
+                if (check.Checked)
+                    subtotal += Selection.AddonPrice;
             }
 
-            return addonTotal + menuPrice;
+            return subtotal;
         }
 
-        // Calculates the tax applied to subtotal
-        private double calculateTax(double subtotal)
+        private decimal CalculateTax(decimal Subtotal)
         {
-            const double TAX_RATE = 0.05;   // Tax Rate (GST)
-            return subtotal * TAX_RATE;
+            return TAX_RATE * Subtotal;
         }
 
         // Resets the fields that display prices
         // This is the Click handler for the Reset button
-        private void resetPrice(object sender, EventArgs e)
+        private void ResetMenu(object sender, EventArgs e)
+        {
+            HamburgerRadio.Checked = true;
+            UpdateAddons(HamburgerRadio);
+
+            ResetPrices();
+        }
+
+        private void ResetPrices()
         {
             SubtotalText.Text = "";
             TaxText.Text = "";
